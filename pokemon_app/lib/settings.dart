@@ -151,3 +151,23 @@ class _ThemeModeSelectionPageState extends State<ThemeModeSelectionPage> {
     );
   }
 }
+
+class ThemeModeNotifier extends ChangeNotifier {
+  late ThemeMode _themeMode;
+  themeModeNotifier() {
+    _init();
+  }
+
+  ThemeMode get mode => _themeMode;
+
+  void _init() async {
+    _themeMode = await loadThemeMode();
+    notifyListeners();
+  }
+
+  void update(ThemeMode nextMode) {
+    _themeMode = nextMode;
+    saveThemeMode(nextMode);
+    notifyListeners();
+  }
+}
