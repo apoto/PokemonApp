@@ -1,6 +1,7 @@
 import 'dart:ffi';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 int modeToVal(ThemeMode mode) {
@@ -47,51 +48,46 @@ class Settings extends StatefulWidget {
 }
 
 class _SettingsState extends State<Settings> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  @override
-  void initState() {
-    super.initState();
-    loadThemeMode().then((val) => setState(() => _themeMode = val));
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        ListTile(
-          leading: const Icon(Icons.lightbulb),
-          title: const Text('Dark/Light Mode'),
-          trailing: Text((_themeMode == ThemeMode.system)
-              ? 'System'
-              : (_themeMode == ThemeMode.dark ? 'Dark' : 'Light')),
-          onTap: () async {
-            var ret = await Navigator.of(context).push<ThemeMode>(
-              MaterialPageRoute(
-                builder: (context) => ThemeModeSelectionPage(mode: _themeMode),
-              ),
-            );
-            setState(() => _themeMode = ret!);
-            await saveThemeMode(_themeMode);
-          },
-        ),
-        SwitchListTile(
-          title: const Text('Switch'),
-          value: true,
-          onChanged: (yes) => {},
-        ),
-        CheckboxListTile(
-          title: const Text('Checkbox'),
-          value: true,
-          onChanged: (yes) => {},
-        ),
-        RadioListTile(
-          title: const Text('Radio'),
-          value: true,
-          groupValue: true,
-          onChanged: (yes) => {},
-        ),
-      ],
+    return Consumer<ThemeModeNotifier>(
+      builder: (context, mode, child) => ListView(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.lightbulb),
+            title: const Text('Dark/Light Mode'),
+            trailing: Text((mode.mode == ThemeMode.system)
+                ? 'System'
+                : (mode.mode == ThemeMode.dark ? 'Dark' : 'Light')),
+            onTap: () async {
+              var ret = await Navigator.of(context).push<ThemeMode>(
+                MaterialPageRoute(
+                  builder: (context) => ThemeModeSelectionPage(init: mode.mode),
+                ),
+              );
+              if (ret != null) {
+                mode.update(ret);
+              }
+            },
+          ),
+          SwitchListTile(
+            title: const Text('Switch'),
+            value: true,
+            onChanged: (yes) => {},
+          ),
+          CheckboxListTile(
+            title: const Text('Checkbox'),
+            value: true,
+            onChanged: (yes) => {},
+          ),
+          RadioListTile(
+            title: const Text('Radio'),
+            value: true,
+            groupValue: true,
+            onChanged: (yes) => {},
+          ),
+        ],
+      ),
     );
   }
 }
@@ -99,9 +95,9 @@ class _SettingsState extends State<Settings> {
 class ThemeModeSelectionPage extends StatefulWidget {
   const ThemeModeSelectionPage({
     Key? key,
-    required this.mode,
+    required this.init,
   }) : super(key: key);
-  final ThemeMode mode;
+  final ThemeMode init;
 
   @override
   _ThemeModeSelectionPageState createState() => _ThemeModeSelectionPageState();
@@ -112,7 +108,7 @@ class _ThemeModeSelectionPageState extends State<ThemeModeSelectionPage> {
   @override
   void initState() {
     super.initState();
-    _current = widget.mode;
+    _current = widget.init;
   }
 
   @override
@@ -154,13 +150,14 @@ class _ThemeModeSelectionPageState extends State<ThemeModeSelectionPage> {
 
 class ThemeModeNotifier extends ChangeNotifier {
   late ThemeMode _themeMode;
-  themeModeNotifier() {
-    _init();
+  //late SharedPreferences pref;
+  ThemeModeNotifier(SharedPreferences pref) {
+    _init(pref);
   }
 
   ThemeMode get mode => _themeMode;
 
-  void _init() async {
+  void _init(SharedPreferences pref) async {
     _themeMode = await loadThemeMode();
     notifyListeners();
   }
